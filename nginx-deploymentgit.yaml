@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deploy-resturan
+  namespace: nginx
+  labels:
+    app: nginx-cc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-cc
+  template:
+    metadata:
+      labels:
+        app: nginx-cc
+    spec:
+      containers:
+      - name: git-sync
+        image: registry.k8s.io/git-sync/git-sync:v4.2.3
+        volumeMounts:
+        - name: www-data
+          mountPath: /data
+        env:
+        - name: GITSYNC_REPO
+          value: "http://gittry.com:3000/gogs/resturan.git"
+        - name: GIT_SYNC_BRANCH
+          value: "master"
+        - name: GITSYNC_ROOT
+          value: /data
+        - name: GIT_SYNC_DEST
+          value: "html"
+        - name: GITSYNC_ONE_TIME
+          value: "false"
+        - name: GIT_SYNC_COMMAND_AFTER
+          value: "nginx -s reload"
+        securityContext:
+          runAsUser: 0
+      - name: nginx-resturan
+        image: nginx
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - mountPath: "/usr/share/nginx/"
+          name: www-data
+      volumes:
+      - name: www-data
+        emptyDir: {}
+
